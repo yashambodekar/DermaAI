@@ -2,7 +2,6 @@ import os
 import json
 import google.generativeai as genai
 
-from PIL import Image
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,29 +15,24 @@ model = genai.GenerativeModel(
 )
 
 
-def analyze_skin_and_generate_report(
-    image_path,
+def generate_skin_report(
+    cnn_result,
     questionnaire_result,
     user_data
 ):
 
-    image = Image.open(image_path)
-
     prompt = f"""
-You are an AI skincare assistant.
+You are an expert AI skincare assistant.
 
-Analyze the uploaded facial image and the questionnaire data.
+A CNN skin disease detection model has already analyzed the skin image.
 
-IMPORTANT:
-- This is not a medical diagnosis.
-- Mention that results are AI-generated.
-- Avoid prescribing medication.
-- Give practical skincare guidance.
+CNN Prediction:
+{cnn_result}
 
-Questionnaire Result:
+Questionnaire Analysis:
 {questionnaire_result}
 
-User Details:
+User Information:
 Age: {user_data['age']}
 Skin Type: {user_data['skin_type']}
 Sleep Hours: {user_data['sleep_hours']}
@@ -46,7 +40,18 @@ Water Intake: {user_data['water_intake']}
 Sun Exposure: {user_data['sun_exposure']}
 Stress Level: {user_data['stress_level']}
 
-Return ONLY VALID JSON:
+IMPORTANT:
+
+- Treat the CNN prediction as the primary skin condition prediction.
+- Use questionnaire data to personalize recommendations.
+- This is NOT a medical diagnosis.
+- Clearly mention that results are AI-generated.
+- Do NOT prescribe medication.
+- Give safe and practical skincare guidance.
+- Recommend skincare product categories, not specific prescription drugs.
+- Confidence should be based on the CNN confidence score.
+
+Return ONLY valid JSON.
 
 {{
     "skin_condition":"",
@@ -61,12 +66,13 @@ Return ONLY VALID JSON:
     "foods_to_avoid":[],
     "recommended_products":[],
     "lifestyle_recommendations":[],
-    "consult_dermatologist_when":[]
+    "consult_dermatologist_when":[],
+    "disclaimer":""
 }}
 """
 
     response = model.generate_content(
-        [prompt, image]
+        prompt
     )
 
     text = response.text.strip()

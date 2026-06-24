@@ -11,7 +11,11 @@ from services.questionnaire import (
 )
 
 from services.gemini_service import (
-    analyze_skin_and_generate_report
+    generate_skin_report
+)
+
+from services.predictor import (
+    predict_skin_disease
 )
 
 router = APIRouter()
@@ -73,9 +77,25 @@ async def analyze_skin(
         )
     )
 
+    # CNN Prediction from Hugging Face
+    cnn_result = (
+        predict_skin_disease(
+            image_path
+        )
+    )
+    
+    try:
+     cnn_result = predict_skin_disease(image_path)
+    except Exception:
+     cnn_result = {
+        "Disease": "Unknown",
+        "Confidence (%)": 0
+    }
+
+    # Gemini Report Generation
     report = (
-        analyze_skin_and_generate_report(
-            image_path,
+        generate_skin_report(
+            cnn_result,
             questionnaire_result,
             user_data
         )
@@ -85,6 +105,7 @@ async def analyze_skin(
         os.remove(image_path)
 
     return {
+        "cnn_prediction": cnn_result,
         "questionnaire": questionnaire_result,
         "analysis": report
     }
